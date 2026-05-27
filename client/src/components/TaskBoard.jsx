@@ -13,10 +13,11 @@ export default function TaskBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openForm, setOpenForm] = useState(null);
-  const [newTask, setNewTask] = useState({ title: "", priority: "med", tags: "" });
+  const [newTask, setNewTask] = useState({ title: "", priority: "med", tags: "", dueDate: "", assignee: "" });
   const [dragging, setDragging] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterPriority, setFilterPriority] = useState("all");
 
-  // Fetch all tasks from MongoDB on load
   useEffect(() => {
     fetchTasks();
   }, []);
@@ -32,7 +33,6 @@ export default function TaskBoard() {
     }
   };
 
-  // Create a new task
   const handleCreate = async (colId) => {
     if (!newTask.title.trim()) return;
     try {
@@ -41,16 +41,17 @@ export default function TaskBoard() {
         priority: newTask.priority,
         tags: newTask.tags ? [newTask.tags] : [],
         status: colId,
+        dueDate: newTask.dueDate || null,
+        assignee: newTask.assignee || "",
       });
       setTasks([res.data, ...tasks]);
       setOpenForm(null);
-      setNewTask({ title: "", priority: "med", tags: "" });
+      setNewTask({ title: "", priority: "med", tags: "", dueDate: "", assignee: "" });
     } catch (err) {
       setError("Failed to create task");
     }
   };
 
-  // Delete a task
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
@@ -60,7 +61,6 @@ export default function TaskBoard() {
     }
   };
 
-  // Drag and drop — update status in MongoDB
   const handleDrop = async (colId) => {
     if (!dragging) return;
     try {
@@ -72,51 +72,79 @@ export default function TaskBoard() {
     }
   };
 
+  // Filter tasks based on search and priority
+  const filteredTasks = tasks.filter((t) => {
+    const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase()) ||
+      t.assignee?.toLowerCase().includes(search.toLowerCase());
+    const matchesPriority = filterPriority === "all" || t.priority === filterPriority;
+    return matchesSearch && matchesPriority;
+  });
+
   if (loading) return <p style={{ padding: "2rem" }}>Loading tasks...</p>;
   if (error)   return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
 
   return (
     <div style={{ padding: "1.5rem", fontFamily: "sans-serif" }}>
-      <h1 style={{ marginBottom: "1.5rem", fontSize: "22px" }}>Task Board</h1>
 
+      {/* Header */}
+      <h1 style={{ marginBottom: "1rem", fontSize: "22px" }}>Task Board</h1>
+
+      {/* Search and filter bar */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <input
+          placeholder="Search tasks or assignee..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ flex: 1, padding: "7px 12px", borderRadius: "8px", border: "0.5px solid #ddd", fontSize: "13px", minWidth: "200px" }}
+        />
+        <select
+          value={filterPriority}
+          onChange={(e) => setFilterPriority(e.target.value)}
+          style={{ padding: "7px 12px", borderRadius: "8px", border: "0.5px solid #ddd", fontSize: "13px" }}
+        >
+          <option value="all">All priorities</option>
+          <option value="high">High</option>
+          <option value="med">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        {(search || filterPriority !== "all") && (
+          <button
+            onClick={() => { setSearch(""); setFilterPriority("all"); }}
+            style={{ padding: "7px 12px", borderRadius: "8px", border: "0.5px solid #ddd", fontSize: "13px", cursor: "pointer", color: "#888" }}
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {/* Kanban columns */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
         {COLS.map((col) => (
           <div
             key={col.id}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(col.id)}
-            style={{
-              background: "#f5f5f5",
-              borderRadius: "12px",
-              padding: "12px",
-              minHeight: "300px",
-            }}
+            style={{ background: "#f5f5f5", borderRadius: "12px", padding: "12px", minHeight: "300px" }}
           >
             {/* Column header */}
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
               <span style={{ fontWeight: "500", fontSize: "13px" }}>{col.label}</span>
               <span style={{ fontSize: "11px", background: "#e0e0e0", borderRadius: "99px", padding: "2px 8px" }}>
-                {tasks.filter((t) => t.status === col.id).length}
+                {filteredTasks.filter((t) => t.status === col.id).length}
               </span>
             </div>
 
             {/* Task cards */}
-            {tasks
+            {filteredTasks
               .filter((t) => t.status === col.id)
               .map((task) => (
                 <div
                   key={task._id}
                   draggable
                   onDragStart={() => setDragging(task._id)}
-                  style={{
-                    background: "#fff",
-                    border: "0.5px solid #ddd",
-                    borderRadius: "8px",
-                    padding: "10px 12px",
-                    marginBottom: "8px",
-                    cursor: "grab",
-                  }}
+                  style={{ background: "#fff", border: "0.5px solid #ddd", borderRadius: "8px", padding: "10px 12px", marginBottom: "8px", cursor: "grab" }}
                 >
+                  {/* Title and delete */}
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "13px", fontWeight: "500" }}>{task.title}</span>
                     <button
@@ -126,7 +154,11 @@ export default function TaskBoard() {
                       ×
                     </button>
                   </div>
-                  <div style={{ marginTop: "6px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
+
+                  {/* Badges row */}
+                  <div style={{ marginTop: "6px", display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+
+                    {/* Priority badge */}
                     <span style={{
                       fontSize: "11px", padding: "2px 8px", borderRadius: "99px",
                       background: task.priority === "high" ? "#FAECE7" : task.priority === "med" ? "#FAEEDA" : "#EAF3DE",
@@ -134,11 +166,34 @@ export default function TaskBoard() {
                     }}>
                       {task.priority === "high" ? "High" : task.priority === "med" ? "Medium" : "Low"}
                     </span>
+
+                    {/* Tags */}
                     {task.tags?.map((tag) => (
                       <span key={tag} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", background: "#f0f0f0", color: "#555" }}>
                         {tag}
                       </span>
                     ))}
+
+                    {/* Due date */}
+                    {task.dueDate && (
+                      <span style={{
+                        fontSize: "11px", padding: "2px 8px", borderRadius: "99px",
+                        background: new Date(task.dueDate) < new Date() ? "#FCEBEB" : "#E6F1FB",
+                        color: new Date(task.dueDate) < new Date() ? "#A32D2D" : "#185FA5",
+                      }}>
+                        📅 {new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+                    )}
+
+                    {/* Assignee avatar */}
+                    {task.assignee && (
+                      <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", background: "#F1EFE8", color: "#5F5E5A", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ width: "16px", height: "16px", borderRadius: "50%", background: "#378ADD", color: "#fff", fontSize: "9px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: "600" }}>
+                          {task.assignee.charAt(0).toUpperCase()}
+                        </span>
+                        {task.assignee}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -169,6 +224,18 @@ export default function TaskBoard() {
                     style={{ flex: 1, padding: "5px 8px", borderRadius: "6px", border: "0.5px solid #ddd", fontSize: "13px" }}
                   />
                 </div>
+                <input
+                  type="date"
+                  value={newTask.dueDate}
+                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                  style={{ width: "100%", padding: "5px 8px", marginBottom: "6px", borderRadius: "6px", border: "0.5px solid #ddd", fontSize: "13px" }}
+                />
+                <input
+                  placeholder="Assignee name..."
+                  value={newTask.assignee}
+                  onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
+                  style={{ width: "100%", padding: "5px 8px", marginBottom: "6px", borderRadius: "6px", border: "0.5px solid #ddd", fontSize: "13px" }}
+                />
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button
                     onClick={() => handleCreate(col.id)}
