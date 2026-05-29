@@ -2,25 +2,39 @@ import { useEffect, useState } from "react";
 import { getTasks, createTask, updateTask, deleteTask } from "../api/tasks";
 
 const COLS = [
-  { id: "todo",   label: "To Do" },
-  { id: "inprog", label: "In Progress" },
-  { id: "review", label: "Review" },
-  { id: "done",   label: "Done" },
+  { id: "todo",   label: "To Do",       color: "#818CF8", bg: "rgba(129,140,248,0.1)",  glow: "rgba(129,140,248,0.3)" },
+  { id: "inprog", label: "In Progress", color: "#FBBF24", bg: "rgba(251,191,36,0.1)",   glow: "rgba(251,191,36,0.3)" },
+  { id: "review", label: "Review",      color: "#F472B6", bg: "rgba(244,114,182,0.1)",  glow: "rgba(244,114,182,0.3)" },
+  { id: "done",   label: "Done",        color: "#34D399", bg: "rgba(52,211,153,0.1)",   glow: "rgba(52,211,153,0.3)" },
 ];
 
+const PRIORITY_CONFIG = {
+  high: { bg: "rgba(248,113,113,0.15)", color: "#F87171", label: "High" },
+  med:  { bg: "rgba(251,191,36,0.15)",  color: "#FBBF24", label: "Medium" },
+  low:  { bg: "rgba(52,211,153,0.15)",  color: "#34D399", label: "Low" },
+};
+
+const G = {
+  bg:      "#0A0A0F",
+  surface: "#0F0F1A",
+  card:    "#13131F",
+  border:  "rgba(255,255,255,0.07)",
+  text:    "#E2E8F0",
+  muted:   "#64748B",
+};
+
 export default function TaskBoard() {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [openForm, setOpenForm] = useState(null);
-  const [newTask, setNewTask] = useState({ title: "", priority: "med", tags: "", dueDate: "", assignee: "" });
-  const [dragging, setDragging] = useState(null);
-  const [search, setSearch] = useState("");
+  const [tasks, setTasks]               = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState(null);
+  const [openForm, setOpenForm]         = useState(null);
+  const [newTask, setNewTask]           = useState({ title: "", priority: "med", tags: "", dueDate: "", assignee: "" });
+  const [dragging, setDragging]         = useState(null);
+  const [dragOver, setDragOver]         = useState(null);
+  const [search, setSearch]             = useState("");
   const [filterPriority, setFilterPriority] = useState("all");
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  useEffect(() => { fetchTasks(); }, []);
 
   const fetchTasks = async () => {
     try {
@@ -67,200 +81,282 @@ export default function TaskBoard() {
       const res = await updateTask(dragging, { status: colId });
       setTasks(tasks.map((t) => (t._id === dragging ? res.data : t)));
       setDragging(null);
+      setDragOver(null);
     } catch (err) {
       setError("Failed to update task");
     }
   };
 
-  // Filter tasks based on search and priority
   const filteredTasks = tasks.filter((t) => {
-    const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase()) ||
+    const matchesSearch =
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
       t.assignee?.toLowerCase().includes(search.toLowerCase());
     const matchesPriority = filterPriority === "all" || t.priority === filterPriority;
     return matchesSearch && matchesPriority;
   });
 
-  if (loading) return <p style={{ padding: "2rem" }}>Loading tasks...</p>;
-  if (error)   return <p style={{ padding: "2rem", color: "red" }}>{error}</p>;
+  const totalTasks    = tasks.length;
+  const doneTasks     = tasks.filter((t) => t.status === "done").length;
+  const overdueTasks  = tasks.filter((t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "done").length;
+  const inProgTasks   = tasks.filter((t) => t.status === "inprog").length;
+
+  if (loading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: G.bg, fontFamily: "Inter, sans-serif" }}>
+      <p style={{ color: "#818CF8", fontSize: "14px", letterSpacing: "0.1em" }}>Loading your board...</p>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: G.bg }}>
+      <p style={{ color: "#F87171", background: "rgba(248,113,113,0.1)", padding: "12px 20px", borderRadius: "8px", border: "1px solid rgba(248,113,113,0.3)" }}>{error}</p>
+    </div>
+  );
 
   return (
-    <div style={{ padding: "1.5rem", fontFamily: "sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: G.bg, fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
-      {/* Header */}
-      <h1 style={{ marginBottom: "1rem", fontSize: "22px" }}>Task Board</h1>
-
-      {/* Search and filter bar */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-        <input
-          placeholder="Search tasks or assignee..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: 1, padding: "7px 12px", borderRadius: "8px", border: "0.5px solid #ddd", fontSize: "13px", minWidth: "200px" }}
-        />
-        <select
-          value={filterPriority}
-          onChange={(e) => setFilterPriority(e.target.value)}
-          style={{ padding: "7px 12px", borderRadius: "8px", border: "0.5px solid #ddd", fontSize: "13px" }}
-        >
-          <option value="all">All priorities</option>
-          <option value="high">High</option>
-          <option value="med">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        {(search || filterPriority !== "all") && (
-          <button
-            onClick={() => { setSearch(""); setFilterPriority("all"); }}
-            style={{ padding: "7px 12px", borderRadius: "8px", border: "0.5px solid #ddd", fontSize: "13px", cursor: "pointer", color: "#888" }}
-          >
-            Clear filters
-          </button>
-        )}
+      {/* Navbar */}
+      <div style={{ background: G.surface, borderBottom: `1px solid ${G.border}`, padding: "0 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: "60px", position: "sticky", top: 0, zIndex: 10, backdropFilter: "blur(10px)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #818CF8, #C084FC)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 12px rgba(129,140,248,0.5)" }}>
+            <span style={{ color: "#fff", fontSize: "16px" }}>⚡</span>
+          </div>
+          <span style={{ fontWeight: "700", fontSize: "16px", background: "linear-gradient(90deg, #818CF8, #C084FC)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.3px" }}>TaskFlow</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #818CF8, #C084FC)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "13px", fontWeight: "600", boxShadow: "0 0 10px rgba(129,140,248,0.4)" }}>K</div>
+          <span style={{ fontSize: "13px", color: "#818CF8", fontWeight: "500" }}>Khushi</span>
+        </div>
       </div>
 
-      {/* Kanban columns */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
-        {COLS.map((col) => (
-          <div
-            key={col.id}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={() => handleDrop(col.id)}
-            style={{ background: "#f5f5f5", borderRadius: "12px", padding: "12px", minHeight: "300px" }}
-          >
-            {/* Column header */}
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-              <span style={{ fontWeight: "500", fontSize: "13px" }}>{col.label}</span>
-              <span style={{ fontSize: "11px", background: "#e0e0e0", borderRadius: "99px", padding: "2px 8px" }}>
-                {filteredTasks.filter((t) => t.status === col.id).length}
-              </span>
-            </div>
+      <div style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
 
-            {/* Task cards */}
-            {filteredTasks
-              .filter((t) => t.status === col.id)
-              .map((task) => (
-                <div
-                  key={task._id}
-                  draggable
-                  onDragStart={() => setDragging(task._id)}
-                  style={{ background: "#fff", border: "0.5px solid #ddd", borderRadius: "8px", padding: "10px 12px", marginBottom: "8px", cursor: "grab" }}
-                >
-                  {/* Title and delete */}
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "13px", fontWeight: "500" }}>{task.title}</span>
-                    <button
-                      onClick={() => handleDelete(task._id)}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#999" }}
-                    >
-                      ×
-                    </button>
-                  </div>
+        {/* Page title */}
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h1 style={{ fontSize: "26px", fontWeight: "700", margin: 0, letterSpacing: "-0.5px", background: "linear-gradient(90deg, #818CF8, #F472B6, #34D399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            Project Board
+          </h1>
+          <p style={{ fontSize: "13px", color: G.muted, marginTop: "4px" }}>Manage and track your team's tasks</p>
+        </div>
 
-                  {/* Badges row */}
-                  <div style={{ marginTop: "6px", display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-
-                    {/* Priority badge */}
-                    <span style={{
-                      fontSize: "11px", padding: "2px 8px", borderRadius: "99px",
-                      background: task.priority === "high" ? "#FAECE7" : task.priority === "med" ? "#FAEEDA" : "#EAF3DE",
-                      color: task.priority === "high" ? "#993C1D" : task.priority === "med" ? "#854F0B" : "#3B6D11",
-                    }}>
-                      {task.priority === "high" ? "High" : task.priority === "med" ? "Medium" : "Low"}
-                    </span>
-
-                    {/* Tags */}
-                    {task.tags?.map((tag) => (
-                      <span key={tag} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", background: "#f0f0f0", color: "#555" }}>
-                        {tag}
-                      </span>
-                    ))}
-
-                    {/* Due date */}
-                    {task.dueDate && (
-                      <span style={{
-                        fontSize: "11px", padding: "2px 8px", borderRadius: "99px",
-                        background: new Date(task.dueDate) < new Date() ? "#FCEBEB" : "#E6F1FB",
-                        color: new Date(task.dueDate) < new Date() ? "#A32D2D" : "#185FA5",
-                      }}>
-                        📅 {new Date(task.dueDate).toLocaleDateString()}
-                      </span>
-                    )}
-
-                    {/* Assignee avatar */}
-                    {task.assignee && (
-                      <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", background: "#F1EFE8", color: "#5F5E5A", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <span style={{ width: "16px", height: "16px", borderRadius: "50%", background: "#378ADD", color: "#fff", fontSize: "9px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: "600" }}>
-                          {task.assignee.charAt(0).toUpperCase()}
-                        </span>
-                        {task.assignee}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-            {/* Add task form */}
-            {openForm === col.id ? (
-              <div style={{ background: "#fff", border: "0.5px solid #ddd", borderRadius: "8px", padding: "10px", marginTop: "8px" }}>
-                <input
-                  placeholder="Task title..."
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  style={{ width: "100%", padding: "5px 8px", marginBottom: "6px", borderRadius: "6px", border: "0.5px solid #ddd", fontSize: "13px" }}
-                />
-                <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
-                  <select
-                    value={newTask.priority}
-                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                    style={{ flex: 1, padding: "5px", borderRadius: "6px", border: "0.5px solid #ddd", fontSize: "13px" }}
-                  >
-                    <option value="high">High</option>
-                    <option value="med">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                  <input
-                    placeholder="Tag"
-                    value={newTask.tags}
-                    onChange={(e) => setNewTask({ ...newTask, tags: e.target.value })}
-                    style={{ flex: 1, padding: "5px 8px", borderRadius: "6px", border: "0.5px solid #ddd", fontSize: "13px" }}
-                  />
-                </div>
-                <input
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                  style={{ width: "100%", padding: "5px 8px", marginBottom: "6px", borderRadius: "6px", border: "0.5px solid #ddd", fontSize: "13px" }}
-                />
-                <input
-                  placeholder="Assignee name..."
-                  value={newTask.assignee}
-                  onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-                  style={{ width: "100%", padding: "5px 8px", marginBottom: "6px", borderRadius: "6px", border: "0.5px solid #ddd", fontSize: "13px" }}
-                />
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button
-                    onClick={() => handleCreate(col.id)}
-                    style={{ flex: 1, padding: "5px", borderRadius: "6px", border: "0.5px solid #ddd", cursor: "pointer", fontWeight: "500", fontSize: "12px" }}
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => setOpenForm(null)}
-                    style={{ flex: 1, padding: "5px", borderRadius: "6px", border: "0.5px solid #ddd", cursor: "pointer", fontSize: "12px", color: "#888" }}
-                  >
-                    Cancel
-                  </button>
-                </div>
+        {/* Stats bar */}
+        <div style={{ display: "flex", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+          {[
+            { label: "Total Tasks",  value: totalTasks,  color: "#818CF8", glow: "rgba(129,140,248,0.3)" },
+            { label: "Completed",    value: doneTasks,   color: "#34D399", glow: "rgba(52,211,153,0.3)"  },
+            { label: "Overdue",      value: overdueTasks, color: "#F87171", glow: "rgba(248,113,113,0.3)" },
+            { label: "In Progress",  value: inProgTasks, color: "#FBBF24", glow: "rgba(251,191,36,0.3)"  },
+          ].map((stat) => (
+            <div key={stat.label} style={{ background: G.surface, border: `1px solid ${G.border}`, borderRadius: "12px", padding: "14px 20px", display: "flex", alignItems: "center", gap: "12px", minWidth: "140px", flex: 1 }}>
+              <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: `rgba(${stat.color === "#818CF8" ? "129,140,248" : stat.color === "#34D399" ? "52,211,153" : stat.color === "#F87171" ? "248,113,113" : "251,191,36"},0.15)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 10px ${stat.glow}` }}>
+                <span style={{ fontSize: "16px", fontWeight: "700", color: stat.color }}>{stat.value}</span>
               </div>
-            ) : (
-              <button
-                onClick={() => setOpenForm(col.id)}
-                style={{ width: "100%", marginTop: "8px", padding: "7px", borderRadius: "8px", border: "0.5px dashed #ccc", background: "none", cursor: "pointer", fontSize: "12px", color: "#888" }}
-              >
-                + Add task
-              </button>
-            )}
+              <span style={{ fontSize: "12px", color: G.muted, fontWeight: "500" }}>{stat.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Search and filter */}
+        <div style={{ display: "flex", gap: "10px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, position: "relative", minWidth: "200px" }}>
+            <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: G.muted, fontSize: "14px" }}>🔍</span>
+            <input
+              placeholder="Search tasks or assignee..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px 10px 36px", borderRadius: "10px", border: `1px solid ${G.border}`, fontSize: "13px", background: G.surface, color: G.text, outline: "none", boxSizing: "border-box" }}
+            />
           </div>
-        ))}
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            style={{ padding: "10px 14px", borderRadius: "10px", border: `1px solid ${G.border}`, fontSize: "13px", background: G.surface, color: G.text, cursor: "pointer" }}
+          >
+            <option value="all">All Priorities</option>
+            <option value="high">🔴 High</option>
+            <option value="med">🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+          {(search || filterPriority !== "all") && (
+            <button
+              onClick={() => { setSearch(""); setFilterPriority("all"); }}
+              style={{ padding: "10px 14px", borderRadius: "10px", border: `1px solid ${G.border}`, fontSize: "13px", background: G.surface, color: G.muted, cursor: "pointer" }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Kanban columns */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+          {COLS.map((col) => {
+            const colTasks = filteredTasks.filter((t) => t.status === col.id);
+            return (
+              <div
+                key={col.id}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(col.id); }}
+                onDragLeave={() => setDragOver(null)}
+                onDrop={() => handleDrop(col.id)}
+                style={{
+                  background: dragOver === col.id ? col.bg : G.surface,
+                  border: `1px solid ${dragOver === col.id ? col.color + "60" : G.border}`,
+                  borderRadius: "16px",
+                  padding: "16px",
+                  minHeight: "400px",
+                  transition: "all 0.2s ease",
+                  boxShadow: dragOver === col.id ? `0 0 20px ${col.glow}` : "none",
+                }}
+              >
+                {/* Column header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col.color, boxShadow: `0 0 8px ${col.color}` }}></div>
+                    <span style={{ fontWeight: "600", fontSize: "13px", color: col.color, textShadow: `0 0 10px ${col.glow}` }}>{col.label}</span>
+                  </div>
+                  <span style={{ fontSize: "11px", fontWeight: "600", background: col.bg, color: col.color, borderRadius: "99px", padding: "2px 9px", border: `1px solid ${col.color}40` }}>
+                    {colTasks.length}
+                  </span>
+                </div>
+
+                {/* Task cards */}
+                {colTasks.map((task) => (
+                  <div
+                    key={task._id}
+                    draggable
+                    onDragStart={() => setDragging(task._id)}
+                    onDragEnd={() => setDragging(null)}
+                    style={{
+                      background: G.card,
+                      border: `1px solid ${G.border}`,
+                      borderRadius: "12px",
+                      padding: "12px 14px",
+                      marginBottom: "10px",
+                      cursor: "grab",
+                      opacity: dragging === task._id ? 0.4 : 1,
+                      transition: "all 0.15s ease",
+                      boxShadow: dragging === task._id ? "none" : "0 2px 12px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    {/* Title and delete */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
+                      <span style={{ fontSize: "13px", fontWeight: "600", color: "#F1F5F9", lineHeight: "1.4", flex: 1, paddingRight: "8px" }}>{task.title}</span>
+                      <button
+                        onClick={() => handleDelete(task._id)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: G.muted, fontSize: "16px", lineHeight: 1, padding: 0, flexShrink: 0 }}
+                        onMouseOver={(e) => e.target.style.color = "#F87171"}
+                        onMouseOut={(e) => e.target.style.color = G.muted}
+                      >×</button>
+                    </div>
+
+                    {/* Badges */}
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+
+                      {/* Priority */}
+                      <span style={{ fontSize: "11px", fontWeight: "500", padding: "2px 8px", borderRadius: "99px", background: PRIORITY_CONFIG[task.priority]?.bg, color: PRIORITY_CONFIG[task.priority]?.color, border: `1px solid ${PRIORITY_CONFIG[task.priority]?.color}40` }}>
+                        {PRIORITY_CONFIG[task.priority]?.label}
+                      </span>
+
+                      {/* Tags */}
+                      {task.tags?.map((tag) => (
+                        <span key={tag} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "99px", background: "rgba(129,140,248,0.1)", color: "#818CF8", fontWeight: "500", border: "1px solid rgba(129,140,248,0.25)" }}>
+                          {tag}
+                        </span>
+                      ))}
+
+                      {/* Due date */}
+                      {task.dueDate && (
+                        <span style={{
+                          fontSize: "11px", padding: "2px 8px", borderRadius: "99px", fontWeight: "500",
+                          background: new Date(task.dueDate) < new Date() ? "rgba(248,113,113,0.15)" : "rgba(96,165,250,0.15)",
+                          color: new Date(task.dueDate) < new Date() ? "#F87171" : "#60A5FA",
+                          border: `1px solid ${new Date(task.dueDate) < new Date() ? "rgba(248,113,113,0.3)" : "rgba(96,165,250,0.3)"}`,
+                        }}>
+                          📅 {new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                      )}
+
+                      {/* Assignee */}
+                      {task.assignee && (
+                        <span style={{ fontSize: "11px", padding: "2px 8px 2px 4px", borderRadius: "99px", background: "rgba(192,132,252,0.1)", color: "#C084FC", fontWeight: "500", display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(192,132,252,0.25)" }}>
+                          <span style={{ width: "18px", height: "18px", borderRadius: "50%", background: "linear-gradient(135deg, #818CF8, #C084FC)", color: "#fff", fontSize: "9px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: "700", boxShadow: "0 0 6px rgba(129,140,248,0.5)" }}>
+                            {task.assignee.charAt(0).toUpperCase()}
+                          </span>
+                          {task.assignee}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add task form */}
+                {openForm === col.id ? (
+                  <div style={{ background: G.card, border: `1px solid ${G.border}`, borderRadius: "12px", padding: "12px", marginTop: "8px" }}>
+                    <input
+                      placeholder="Task title..."
+                      value={newTask.title}
+                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && handleCreate(col.id)}
+                      style={{ width: "100%", padding: "8px 10px", marginBottom: "8px", borderRadius: "8px", border: `1px solid ${G.border}`, fontSize: "13px", background: G.surface, color: G.text, boxSizing: "border-box", outline: "none" }}
+                      autoFocus
+                    />
+                    <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
+                      <select
+                        value={newTask.priority}
+                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                        style={{ flex: 1, padding: "7px", borderRadius: "8px", border: `1px solid ${G.border}`, fontSize: "12px", background: G.surface, color: G.text }}
+                      >
+                        <option value="high">🔴 High</option>
+                        <option value="med">🟡 Medium</option>
+                        <option value="low">🟢 Low</option>
+                      </select>
+                      <input
+                        placeholder="Tag"
+                        value={newTask.tags}
+                        onChange={(e) => setNewTask({ ...newTask, tags: e.target.value })}
+                        style={{ flex: 1, padding: "7px 10px", borderRadius: "8px", border: `1px solid ${G.border}`, fontSize: "12px", background: G.surface, color: G.text }}
+                      />
+                    </div>
+                    <input
+                      type="date"
+                      value={newTask.dueDate}
+                      onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                      style={{ width: "100%", padding: "7px 10px", marginBottom: "8px", borderRadius: "8px", border: `1px solid ${G.border}`, fontSize: "12px", background: G.surface, color: G.text, boxSizing: "border-box" }}
+                    />
+                    <input
+                      placeholder="Assignee name..."
+                      value={newTask.assignee}
+                      onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
+                      style={{ width: "100%", padding: "7px 10px", marginBottom: "8px", borderRadius: "8px", border: `1px solid ${G.border}`, fontSize: "12px", background: G.surface, color: G.text, boxSizing: "border-box" }}
+                    />
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button
+                        onClick={() => handleCreate(col.id)}
+                        style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, #818CF8, #C084FC)", color: "#fff", cursor: "pointer", fontWeight: "600", fontSize: "12px", boxShadow: "0 0 12px rgba(129,140,248,0.4)" }}
+                      >
+                        Add Task
+                      </button>
+                      <button
+                        onClick={() => setOpenForm(null)}
+                        style={{ flex: 1, padding: "8px", borderRadius: "8px", border: `1px solid ${G.border}`, background: "none", color: G.muted, cursor: "pointer", fontSize: "12px" }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setOpenForm(col.id)}
+                    style={{ width: "100%", marginTop: "8px", padding: "9px", borderRadius: "10px", border: `1.5px dashed ${G.border}`, background: "none", cursor: "pointer", fontSize: "12px", color: G.muted, fontWeight: "500", transition: "all 0.15s" }}
+                    onMouseOver={(e) => { e.currentTarget.style.borderColor = col.color; e.currentTarget.style.color = col.color; e.currentTarget.style.boxShadow = `0 0 10px ${col.glow}`; }}
+                    onMouseOut={(e) => { e.currentTarget.style.borderColor = G.border; e.currentTarget.style.color = G.muted; e.currentTarget.style.boxShadow = "none"; }}
+                  >
+                    + Add Task
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
