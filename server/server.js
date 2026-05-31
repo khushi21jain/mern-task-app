@@ -5,12 +5,15 @@ const cors = require('cors');
 require('dotenv').config();
 
 const taskRoutes = require('./routes/tasks');
+const authRoutes = require('./routes/auth');
+const authMiddleware = require('./middleware/auth');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use('/api/tasks', taskRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/tasks', authMiddleware, taskRoutes);
 
 require('./scheduler');
 
