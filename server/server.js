@@ -10,7 +10,14 @@ const authMiddleware = require('./middleware/auth');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://mern-task-app.vercel.app',
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', authMiddleware, taskRoutes);
