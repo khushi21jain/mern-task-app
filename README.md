@@ -1,6 +1,6 @@
 # ⚡ TaskFlow — MERN Task Automation App
 
-A full-stack task management application built with the MERN stack, featuring a Kanban board, JWT authentication, drag-and-drop, and automated email notifications.
+A full-stack task management application built with the MERN stack, featuring a Kanban board, JWT authentication, drag-and-drop, and automated task scheduling.
 
 ![TaskFlow](https://img.shields.io/badge/Stack-MERN-818CF8?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-34D399?style=for-the-badge)
@@ -9,8 +9,7 @@ A full-stack task management application built with the MERN stack, featuring a 
 
 - **Kanban Board** — drag and drop tasks across To Do, In Progress, Review and Done columns
 - **JWT Authentication** — secure login and signup with hashed passwords
-- **Task Automation** — scheduler automatically moves overdue tasks and sends email alerts
-- **Email Notifications** — daily overdue task emails via Resend API
+- **Task Automation** — scheduler automatically moves overdue tasks to Review column
 - **Search & Filter** — filter tasks by priority or search by title and assignee
 - **Due Dates & Assignees** — track deadlines with color coded overdue indicators
 - **Dark Neon UI** — professional dark theme with neon color accents
@@ -28,7 +27,6 @@ A full-stack task management application built with the MERN stack, featuring a 
 - JWT for authentication
 - bcryptjs for password hashing
 - node-cron for task scheduling
-- Resend for email notifications
 
 ## 📁 Project Structure
 mern-task-app/
@@ -41,7 +39,6 @@ mern-task-app/
 ├── middleware/         # Auth middleware
 ├── models/             # Mongoose schemas
 ├── routes/             # API routes
-├── services/           # Email service
 └── scheduler.js        # Task automation
 
 ## ⚙️ Getting Started
@@ -49,7 +46,6 @@ mern-task-app/
 ### Prerequisites
 - Node.js v18+
 - MongoDB running locally
-- Resend API key
 
 ### Installation
 
@@ -72,11 +68,9 @@ npm install
 ```
 
 4. Create `server/.env`
-
 MONGO_URI=mongodb://localhost:27017/mern-task-app
 PORT=5000
 JWT_SECRET=your_jwt_secret
-RESEND_API_KEY=your_resend_api_key
 
 5. Start the server
 ```bash
