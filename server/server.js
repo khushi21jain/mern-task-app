@@ -14,7 +14,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
-    'https://mern-task-app.vercel.app',
+    'https://mern-task-app-iota.vercel.app',
   ],
   credentials: true,
 }));
