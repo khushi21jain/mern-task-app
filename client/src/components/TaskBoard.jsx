@@ -116,19 +116,19 @@ export default function TaskBoard({ user, onLogout }) {
     <div style={{ minHeight: "100vh", background: G.bg, fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
       {/* Navbar */}
-      <div style={{ background: G.surface, borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: "60px", position: "sticky", top: 0, zIndex: 10 }}>
+      <div className="kb-navbar" style={{ background: G.surface, borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 2rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: "60px", position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #818CF8, #C084FC)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 12px rgba(129,140,248,0.5)" }}>
             <span style={{ color: "#fff", fontSize: "16px" }}>&#9889;</span>
           </div>
-          <span style={{ fontWeight: "700", fontSize: "16px", background: "linear-gradient(90deg, #818CF8, #C084FC)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.3px" }}>TaskFlow</span>
+          <span className="kb-logo-text" style={{ fontWeight: "700", fontSize: "16px", background: "linear-gradient(90deg, #818CF8, #C084FC)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.3px" }}>TaskFlow</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #818CF8, #C084FC)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "13px", fontWeight: "600", boxShadow: "0 0 10px rgba(129,140,248,0.4)" }}>
               {user?.name?.charAt(0).toUpperCase()}
             </div>
-            <span style={{ fontSize: "13px", color: "#818CF8", fontWeight: "500" }}>{user?.name}</span>
+            <span className="kb-navbar-name" style={{ fontSize: "13px", color: "#818CF8", fontWeight: "500" }}>{user?.name}</span>
           </div>
           <button
             onClick={onLogout}
@@ -139,25 +139,26 @@ export default function TaskBoard({ user, onLogout }) {
         </div>
       </div>
 
-      <div style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
+      {/* Body */}
+      <div className="kb-body" style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
 
         {/* Page title */}
         <div style={{ marginBottom: "1.5rem" }}>
-          <h1 style={{ fontSize: "26px", fontWeight: "700", margin: 0, letterSpacing: "-0.5px", background: "linear-gradient(90deg, #818CF8, #F472B6, #34D399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          <h1 className="kb-title" style={{ fontSize: "26px", fontWeight: "700", margin: 0, letterSpacing: "-0.5px", background: "linear-gradient(90deg, #818CF8, #F472B6, #34D399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             Project Board
           </h1>
           <p style={{ fontSize: "13px", color: G.muted, marginTop: "4px" }}>Manage and track your team tasks</p>
         </div>
 
         {/* Stats bar */}
-        <div style={{ display: "flex", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <div className="kb-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "1.5rem" }}>
           {[
             { label: "Total Tasks",  value: totalTasks,   color: "#818CF8", rgb: "129,140,248" },
             { label: "Completed",    value: doneTasks,    color: "#34D399", rgb: "52,211,153"  },
             { label: "Overdue",      value: overdueTasks, color: "#F87171", rgb: "248,113,113" },
             { label: "In Progress",  value: inProgTasks,  color: "#FBBF24", rgb: "251,191,36"  },
           ].map((stat) => (
-            <div key={stat.label} style={{ background: G.surface, border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", padding: "14px 20px", display: "flex", alignItems: "center", gap: "12px", minWidth: "140px", flex: 1 }}>
+            <div key={stat.label} style={{ background: G.surface, border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", padding: "14px 20px", display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: `rgba(${stat.rgb},0.15)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 10px rgba(${stat.rgb},0.3)` }}>
                 <span style={{ fontSize: "16px", fontWeight: "700", color: stat.color }}>{stat.value}</span>
               </div>
@@ -167,7 +168,7 @@ export default function TaskBoard({ user, onLogout }) {
         </div>
 
         {/* Search and filter */}
-        <div style={{ display: "flex", gap: "10px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <div className="kb-filters" style={{ display: "flex", gap: "10px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
           <div style={{ flex: 1, position: "relative", minWidth: "200px" }}>
             <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: G.muted, fontSize: "14px" }}>&#128269;</span>
             <input
@@ -198,7 +199,7 @@ export default function TaskBoard({ user, onLogout }) {
         </div>
 
         {/* Kanban columns */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+        <div className="kb-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
           {COLS.map((col) => {
             const colTasks = filteredTasks.filter((t) => t.status === col.id);
             return (

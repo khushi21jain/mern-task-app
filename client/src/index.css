@@ -15,3 +15,90 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
+
+/* ── Desktop (default) ── */
+.kb-navbar {
+  padding: 0 2rem !important;
+}
+
+.kb-body {
+  padding: 2rem !important;
+}
+
+.kb-grid {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+.kb-stats {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+.kb-filters {
+  flex-direction: row !important;
+}
+
+/* ── Tablet (max 1024px) ── */
+@media (max-width: 1024px) {
+  .kb-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .kb-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .kb-body {
+    padding: 1.5rem !important;
+  }
+}
+
+/* ── Mobile (max 768px) ── */
+@media (max-width: 768px) {
+  .kb-navbar {
+    padding: 0 1rem !important;
+  }
+
+  .kb-navbar-name {
+    display: none !important;
+  }
+
+  .kb-body {
+    padding: 1rem !important;
+  }
+
+  .kb-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .kb-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .kb-filters {
+    flex-direction: column !important;
+  }
+
+  .kb-filters input,
+  .kb-filters select {
+    width: 100% !important;
+  }
+
+  .kb-title {
+    font-size: 20px !important;
+  }
+}
+
+/* ── Small Mobile (max 480px) ── */
+@media (max-width: 480px) {
+  .kb-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .kb-navbar {
+    height: 52px !important;
+  }
+
+  .kb-logo-text {
+    font-size: 14px !important;
+  }
+}
